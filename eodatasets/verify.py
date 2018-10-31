@@ -86,12 +86,15 @@ class PackageChecksum(object):
 
     def add_file(self, file_path):
         """
-        Add a file to the checksum list.
+        Add files to the checksum list (recursing into directories.)
         :type file_path: Path
         :rtype: None
         """
-        hash_ = self._checksum(file_path)
-        self._append_hash(file_path, hash_)
+        if file_path.is_dir():
+            self.add_files(file_path.iterdir())
+        else:
+            hash_ = self._checksum(file_path)
+            self._append_hash(file_path, hash_)
 
     def _checksum(self, file_path):
         _LOG.info('Checksumming %r', file_path)
