@@ -426,10 +426,10 @@ def main(output, datasets, check_checksum, force_absolute_paths, newer_than):
 
         logging.info("Output %s", output_yaml)
         if output_yaml.exists():
-            logging.info("Output already exists %s", output_yaml)
-            if check_checksum and yaml_checkums_correctly(output_yaml, ds_path):
-                logging.info("Dataset preparation already done...SKIPPING %s", ds_path.name)
+            if (not check_checksum) or yaml_checkums_correctly(output_yaml, ds_path):
+                logging.info("Output exists. Skipping %s", output_yaml)
                 continue
+            logging.info("Mismatched checksum on existing output. repackaging %s", output_yaml)
 
         prepare_and_write(ds_path, output_yaml, use_absolute_paths=force_absolute_paths)
 
