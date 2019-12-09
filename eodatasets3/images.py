@@ -33,6 +33,11 @@ try:
 except ImportError:
     h5py = None
 
+try:
+    import scipy.ndimage.morphology as scipy_morphology
+except ImportError:
+    scipy_morphology = None
+
 
 @attr.s(auto_attribs=True, slots=True, hash=True, frozen=True)
 class GridSpec:
@@ -290,7 +295,9 @@ class MeasurementRecord:
                 )
         return crs, grid_docs, measurement_docs
 
-    def consume_and_get_valid_data(self) -> BaseGeometry:
+    def consume_and_get_valid_data(
+        self, simplify_fill_holes=False, simplify_only_record_bounds=False
+    ) -> BaseGeometry:
         """
         Consume the stored grids and produce the valid data for them.
 
@@ -299,6 +306,17 @@ class MeasurementRecord:
         geoms = []
         while self.mask_by_grid:
             grid, mask = self.mask_by_grid.popitem()
+
+            if simplify_only_record_bounds:
+                nonzero = mask.nonzero()
+                min_y, min_x = numpy.min(nonzero, axis=1)
+                max_y, max_x = numpy.max(nonzero, axis=1)
+                mask[min_y:max_y, min_x:max_x] = True
+            if simplify_fill_holes:
+                if scipy_morphology is None:
+                    raise RuntimeError("Optional dependency scipy is not installed")
+                scipy_morphology.binary_fill_holes(mask, output=mask)
+
             mask = mask.astype("uint8")
             shape = shapely.ops.unary_union(
                 [
