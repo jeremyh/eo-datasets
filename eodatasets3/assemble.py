@@ -633,7 +633,11 @@ class DatasetAssembler(EoFields):
         self._software_versions.append(dict(name=name, url=url, version=version))
 
     def done(
-        self, validate_correctness: bool = True, sort_measurements: bool = True
+        self,
+        validate_correctness: bool = True,
+        sort_measurements: bool = True,
+        simple_geometry_bounds=False,
+        simple_geometry_filled=False,
     ) -> Tuple[uuid.UUID, Path]:
         """
         Write the dataset and move it into place.
@@ -646,6 +650,8 @@ class DatasetAssembler(EoFields):
 
         :param validate_correctness: Run the eo3-validator on the resulting metadata.
         :param sort_measurements: Order measurements alphabetically. (instead of insert-order)
+        :param simple_geometry_bounds: Simplify the geometry to only the rectangular outer bounds
+        :param simple_geometry_filled: Simplify the geometry by filling any holes in the shape
         :raises: :class:`IncompleteDatasetError` If any critical metadata is incomplete.
 
         :returns: The id and final path to the dataset metadata file.
@@ -661,7 +667,10 @@ class DatasetAssembler(EoFields):
         if measurement_docs and sort_measurements:
             measurement_docs = dict(sorted(measurement_docs.items()))
 
-        valid_data = self._measurements.consume_and_get_valid_data()
+        valid_data = self._measurements.consume_and_get_valid_data(
+            simplify_only_record_bounds=simple_geometry_bounds,
+            simplify_fill_holes=simple_geometry_filled,
+        )
         # Avoid the messiness of different empty collection types.
         # (to have a non-null geometry we'd also need non-null grids and crses)
         if valid_data.is_empty:
